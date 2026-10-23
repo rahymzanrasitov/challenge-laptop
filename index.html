@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ноутбука</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    body {
+      background-color: #1a1a1a;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      overflow: hidden;
+      color: #fff;
+    }
+
+    /* Главный контейнер игры (Ориентация под Ноутбук / ПК) */
+    .game-container {
+      width: 90vw;
+      max-width: 800px;
+      height: 520px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      border-radius: 24px;
+      box-shadow: 0 15px 35px rgba(0,0,0,0.7), 0 0 0 4px #333;
+      overflow: hidden;
+      background-color: #111;
+      border: 2px solid rgba(255, 255, 255, 0.1);
+    }
+
+    /* Фоновая картинка */
+    img.fon {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      z-index: 0;
+    }
+
+    /* Затемнение для контраста элементов */
+    .game-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.35);
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    /* Панель иконок в верхнем левом углу */
+    .top-left-icons {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      z-index: 10;
+      display: flex;
+      gap: 12px;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(5px);
+      padding: 8px 16px;
+      border-radius: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .top-icon {
+      font-size: 26px;
+      display: inline-block;
+    }
+
+    /* Панель с 3 сердечками в верхнем правом углу */
+    .hearts-row {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      z-index: 10;
+      display: flex;
+      gap: 8px;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(5px);
+      padding: 8px 16px;
+      border-radius: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .heart-slot {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .heart-img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      transition: transform 0.3s ease, opacity 0.3s ease;
+    }
+
+    .heart-break {
+      animation: breakAnim 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    @keyframes breakAnim {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.3) rotate(-10deg); }
+      100% { transform: scale(1) rotate(0deg); }
+    }
+
+    /* Основное игровое поле */
+    .main-board {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 2;
+      padding-top: 60px;
+      gap: 30px;
+    }
+
+    /* Горизонтальный ряд из 3 блоков */
+    .blocks-row {
+      display: flex;
+      justify-content: center;
+      gap: 25px;
+      width: 100%;
+      padding: 0 20px;
+    }
+
+    .block {
+      height: 140px;
+      width: 140px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 65px;
+      background-color: #ffffff;
+      transition: transform 0.1s ease, background-color 0.3s ease, border-color 0.3s ease;
+      border-radius: 20px;
+      border: 4px solid #000;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .block-text {
+      display: inline-block;
+    }
+
+    /* Подсветка победы */
+    .block.win-glow {
+      background-color: #d4edda;
+      border-color: #28a745;
+      animation: winPulse 0.5s infinite alternate;
+    }
+
+    @keyframes winPulse {
+      0% { transform: scale(1); box-shadow: 0 0 15px #28a745; }
+      100% { transform: scale(1.05); box-shadow: 0 0 30px #28a745; }
+    }
+
+    .block-spin {
+      animation: pop 0.15s ease-in-out;
+    }
+
+    @keyframes pop {
+      0% { transform: scale(1); }
+      50% { transform: scale(0.95); }
+      100% { transform: scale(1); }
+    }
+
+    /* Кнопка управления по центру снизу */
+    .controls-bottom {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-spin {
+      background-color: #ffcc00;
+      border: 3px solid #000;
+      color: #000;
+      font-size: 22px;
+      font-weight: bold;
+      padding: 14px 45px;
+      border-radius: 16px;
+      cursor: pointer;
+      box-shadow: 0 6px 0 #000;
+      transition: all 0.1s ease;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .btn-spin:hover:not(:disabled) {
+      background-color: #ffe033;
+    }
+
+    .btn-spin:active:not(:disabled) {
+      transform: translateY(4px);
+      box-shadow: 0 2px 0 #000;
+    }
+
+    .btn-spin:disabled {
+      background-color: #aaaaaa;
+      border-color: #666;
+      color: #666;
+      box-shadow: 0 4px 0 #555;
+      cursor: not-allowed;
+    }
+
+    .hint-text {
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    /* Модальное окно результатов */
+    .modal {
+      display: none;
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(4px);
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+    }
+
+    .modal-content {
+      background: #fff;
+      padding: 35px 40px;
+      border-radius: 24px;
+      text-align: center;
+      border: 4px solid #000;
+      box-shadow: 0 12px 0 #000;
+      max-width: 400px;
+      color: #333;
+    }
+
+    .modal-content h2 {
+      font-size: 28px;
+      margin-bottom: 12px;
+      color: #28a745;
+    }
+
+    .modal-content p {
+      font-size: 18px;
+      margin-bottom: 24px;
+      color: #555;
+    }
+
+    .btn-modal {
+      background: #00b027;
+      color: white;
+      border: 3px solid #000;
+      padding: 12px 32px;
+      font-size: 20px;
+      font-weight: bold;
+      border-radius: 30px;
+      cursor: pointer;
+      box-shadow: 0 5px 0 #000;
+    }
+
+    .btn-modal:hover {
+      background: #00c82c;
+    }
+
+    .btn-modal:active {
+      transform: translateY(2px);
+      box-shadow: 0 3px 0 #000;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="game-container">
+    <!-- Иконки в верхнем левом углу: гусь камыш рыба гусь -->
+    <div class="top-left-icons">
+      <span class="top-icon">🪿</span>
+      <span class="top-icon">🌾</span>
+      <span class="top-icon">🐟</span>
+      <span class="top-icon">🪿</span>
+    </div>
+
+    <!-- 3 Сердечка в верхнем правом углу -->
+    <div class="hearts-row">
+      <div class="heart-slot"><img id="heart1" class="heart-img" src="" alt="heart"></div>
+      <div class="heart-slot"><img id="heart2" class="heart-img" src="" alt="heart"></div>
+      <div class="heart-slot"><img id="heart3" class="heart-img" src="" alt="heart"></div>
+    </div>
+
+    <!-- Фоновая картинка -->
+    <img src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA=" alt="Background" class="fon" id="bgImg">
+    <div class="game-overlay"></div>
+
+    <div class="main-board">
+      <div class="blocks-row">
+        <div class="block" id="block1"><span class="block-text" id="symbol1">🦢</span></div>
+        <div class="block" id="block2"><span class="block-text" id="symbol2">🌾</span></div>
+        <div class="block" id="block3"><span class="block-text" id="symbol3">🐟</span></div>
+      </div>
+
+      <div class="controls-bottom">
+        <button class="btn-spin" id="spinBtn">крутить</button>
+        <span class="hint-text">(или нажмите Пробел)</span>
+      </div>
+    </div>
+
+    <div class="modal" id="gameOverModal">
+      <div class="modal-content">
+        <h2 id="modalTitle">Попытки закончились!</h2>
+        <p id="modalText">Вы использовали все 3 попытки.</p>
+        <button class="btn-modal" id="modalRestartBtn">Играть снова</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const items = ["🦢", "🌾", "🐟"];
+
+    const SVG_FULL_HEART = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M50 88 C20 65 5 45 5 28 C5 12 18 2 33 2 C42 2 47 7 50 12 C53 7 58 2 67 2 C82 2 95 12 95 28 C95 45 80 65 50 88 Z" fill="%23ff3b30" stroke="%23000000" stroke-width="5" stroke-linejoin="round"/><circle cx="30" cy="22" r="6" fill="%23ffffff" opacity="0.6"/><circle cx="24" cy="30" r="3" fill="%23ffffff" opacity="0.6"/><path d="M36 42 Q40 46 44 42" stroke="%23000000" stroke-width="3" stroke-linecap="round" fill="none"/><ellipse cx="32" cy="36" rx="2" ry="3" fill="%23000000"/><ellipse cx="48" cy="36" rx="2" ry="3" fill="%23000000"/></svg>`;
+    const SVG_BROKEN_HEART = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><g transform="translate(-3, 0)"><path d="M50 88 C20 65 5 45 5 28 C5 12 18 2 33 2 C42 2 47 7 50 12 L42 30 L55 48 L40 68 Z" fill="%23888888" stroke="%23444444" stroke-width="4" stroke-linejoin="round"/><ellipse cx="28" cy="36" rx="2" ry="3" fill="%23000000"/><path d="M22 45 Q26 42 30 45" stroke="%23000000" stroke-width="2.5" stroke-linecap="round" fill="none"/></g><g transform="translate(3, 0)"><path d="M50 12 C53 7 58 2 67 2 C82 2 95 12 95 28 C95 45 80 65 50 88 L40 68 L55 48 L42 30 Z" fill="%23aa4444" stroke="%23551111" stroke-width="4" stroke-linejoin="round"/><ellipse cx="70" cy="36" rx="2" ry="3" fill="%23000000"/><path d="M64 45 Q68 42 72 45" stroke="%23000000" stroke-width="2.5" stroke-linecap="round" fill="none"/></g></svg>`;
+
+    let maxAttempts = 3;
+    let attemptsLeft = maxAttempts;
+    let gameState = 'IDLE'; 
+    
+    let interval1, interval2, interval3;
+    let index1 = 0, index2 = 1, index3 = 2;
+
+    const symbol1 = document.getElementById('symbol1');
+    const symbol2 = document.getElementById('symbol2');
+    const symbol3 = document.getElementById('symbol3');
+    
+    const blockContainer1 = document.getElementById('block1');
+    const blockContainer2 = document.getElementById('block2');
+    const blockContainer3 = document.getElementById('block3');
+
+    const spinBtn = document.getElementById('spinBtn');
+    const modalRestartBtn = document.getElementById('modalRestartBtn');
+    const gameOverModal = document.getElementById('gameOverModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalText = document.getElementById('modalText');
+
+    const hearts = [
+      document.getElementById('heart1'),
+      document.getElementById('heart2'),
+      document.getElementById('heart3')
+    ];
+
+    let audioCtx = null;
+    function playSound(type) {
+      try {
+        if (!audioCtx) {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        if (type === 'win') {
+          osc.type = 'triangle';
+          const notes = [523.25, 659.25, 783.99, 1046.50];
+          notes.forEach((freq, index) => {
+            osc.frequency.setValueAtTime(freq, now + index * 0.12);
+          });
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+          osc.start(now);
+          osc.stop(now + 0.6);
+        } else if (type === 'lose') {
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(220, now);
+          osc.frequency.exponentialRampToValueAtTime(110, now + 0.3);
+          gain.gain.setValueAtTime(0.15, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+          osc.start(now);
+          osc.stop(now + 0.3);
+        }
+      } catch (e) {
+        console.log("Audio not supported", e);
+      }
+    }
+
+    function initGame() {
+      attemptsLeft = maxAttempts;
+      gameState = 'IDLE';
+      spinBtn.textContent = "крутить";
+      spinBtn.disabled = false;
+      
+      index1 = 0; index2 = 1; index3 = 2;
+      symbol1.textContent = items[index1];
+      symbol2.textContent = items[index2];
+      symbol3.textContent = items[index3];
+
+      blockContainer1.classList.remove('win-glow');
+      blockContainer2.classList.remove('win-glow');
+      blockContainer3.classList.remove('win-glow');
+
+      hearts.forEach(img => {
+        img.src = SVG_FULL_HEART;
+        img.classList.remove('heart-break');
+      });
+
+      gameOverModal.style.display = 'none';
+      clearInterval(interval1);
+      clearInterval(interval2);
+      clearInterval(interval3);
+    }
+
+    function handleMainButton() {
+      if (attemptsLeft <= 0) return;
+
+      if (gameState === 'IDLE') {
+        gameState = 'SPINNING';
+        spinBtn.textContent = "стоп";
+
+        // Скорость смены символов: 200 мс
+        interval1 = setInterval(() => {
+          index1 = (index1 - 1 + items.length) % items.length;
+          symbol1.textContent = items[index1];
+        }, 200);
+
+        interval2 = setInterval(() => {
+          index2 = (index2 - 1 + items.length) % items.length;
+          symbol2.textContent = items[index2];
+        }, 200);
+
+        interval3 = setInterval(() => {
+          index3 = (index3 - 1 + items.length) % items.length;
+          symbol3.textContent = items[index3];
+        }, 200);
+
+      } else if (gameState === 'SPINNING') {
+        clearInterval(interval1);
+        blockContainer1.classList.add('block-spin');
+        setTimeout(() => blockContainer1.classList.remove('block-spin'), 120);
+        gameState = 'STOP_1';
+
+      } else if (gameState === 'STOP_1') {
+        clearInterval(interval2);
+        blockContainer2.classList.add('block-spin');
+        setTimeout(() => blockContainer2.classList.remove('block-spin'), 120);
+        gameState = 'STOP_2';
+
+      } else if (gameState === 'STOP_2') {
+        clearInterval(interval3);
+        blockContainer3.classList.add('block-spin');
+        setTimeout(() => blockContainer3.classList.remove('block-spin'), 120);
+
+        spinBtn.disabled = true;
+        finishSpin();
+      }
+    }
+
+    function finishSpin() {
+      const v1 = symbol1.textContent;
+      const v2 = symbol2.textContent;
+      const v3 = symbol3.textContent;
+
+      if (v1 === v2 && v2 === v3) {
+        playSound('win');
+        blockContainer1.classList.add('win-glow');
+        blockContainer2.classList.add('win-glow');
+        blockContainer3.classList.add('win-glow');
+
+        spinBtn.disabled = true;
+        setTimeout(() => {
+          modalTitle.textContent = "🎉 ПОБЕДА! 🎉";
+          modalText.textContent = `Вы собрали три одинаковых символа!`;
+          gameOverModal.style.display = 'flex';
+        }, 600);
+        return;
+      }
+
+      playSound('lose');
+      const heartToBreakIndex = maxAttempts - attemptsLeft;
+      if (hearts[heartToBreakIndex]) {
+        const heartImg = hearts[heartToBreakIndex];
+        heartImg.src = SVG_BROKEN_HEART;
+        heartImg.classList.add('heart-break');
+      }
+
+      attemptsLeft--;
+      gameState = 'IDLE';
+      spinBtn.textContent = "крутить";
+
+      if (attemptsLeft > 0) {
+        spinBtn.disabled = false;
+      } else {
+        spinBtn.disabled = true;
+        setTimeout(() => {
+          modalTitle.textContent = "Попытки закончились!";
+          modalText.textContent = "Вы использовали все 3 попытки.";
+          gameOverModal.style.display = 'flex';
+        }, 500);
+      }
+    }
+
+    spinBtn.addEventListener('click', handleMainButton);
+    modalRestartBtn.addEventListener('click', initGame);
+
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Space' || e.code === 'Enter') {
+        e.preventDefault();
+        if (gameOverModal.style.display === 'flex') {
+          initGame();
+        } else if (!spinBtn.disabled) {
+          handleMainButton();
+        }
+      }
+    });
+
+    initGame();
+  </script>
+</body>
+</html>
